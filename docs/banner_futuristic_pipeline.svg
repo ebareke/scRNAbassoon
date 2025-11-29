@@ -1,0 +1,73 @@
+<svg width="1400" height="260" viewBox="0 0 1400 260" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad-main" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00eaff"/>
+      <stop offset="50%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="grad-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background card -->
+  <rect x="10" y="10" width="1380" height="240" rx="26" fill="url(#grad-bg)"
+        stroke="url(#grad-main)" stroke-width="2.5"/>
+
+  <!-- Left: logo orb -->
+  <circle cx="150" cy="130" r="70" fill="none" stroke="#1d4ed8" stroke-width="2"/>
+  <circle cx="150" cy="130" r="46" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 6"/>
+  <circle cx="150" cy="130" r="24" fill="url(#grad-main)" filter="url(#glow)"/>
+  <text x="150" y="135" text-anchor="middle" fill="#e5e7eb"
+        font-family="Menlo, monospace" font-size="18">scRNA</text>
+
+  <!-- Middle text -->
+  <text x="360" y="110" fill="#e5e7eb" font-family="Inter, system-ui, -apple-system"
+        font-size="32" font-weight="700">
+    scRNAbassoon
+  </text>
+  <text x="360" y="145" fill="#9ca3af" font-family="Inter, system-ui, -apple-system"
+        font-size="16">
+    Automated single-cell RNA-seq pipeline • Seurat v5 • GSEA • Slingshot
+  </text>
+
+  <!-- Tags -->
+  <rect x="360" y="165" rx="12" ry="12" width="210" height="30" fill="#020617" stroke="#38bdf8" stroke-width="1"/>
+  <text x="370" y="185" fill="#e5e7eb" font-family="Inter" font-size="13">QC · Preprocessing · Clustering</text>
+
+  <rect x="580" y="165" rx="12" ry="12" width="220" height="30" fill="#020617" stroke="#a855f7" stroke-width="1"/>
+  <text x="590" y="185" fill="#e5e7eb" font-family="Inter" font-size="13">DE · ORA/GSEA · Trajectory</text>
+
+  <!-- Right: pipeline nodes -->
+  <g transform="translate(880,55)">
+    <rect x="0" y="10" width="140" height="40" rx="10" fill="#020617" stroke="#38bdf8" stroke-width="1.4"/>
+    <text x="70" y="35" text-anchor="middle" fill="#e5e7eb" font-family="Inter" font-size="13">QC</text>
+
+    <line x1="140" y1="30" x2="190" y2="30" stroke="#38bdf8" stroke-width="1.4"/>
+
+    <rect x="190" y="10" width="160" height="40" rx="10" fill="#020617" stroke="#4f46e5" stroke-width="1.4"/>
+    <text x="270" y="35" text-anchor="middle" fill="#e5e7eb" font-family="Inter" font-size="13">Preprocess</text>
+
+    <line x1="350" y1="30" x2="400" y2="30" stroke="#38bdf8" stroke-width="1.4"/>
+
+    <rect x="400" y="10" width="150" height="40" rx="10" fill="#020617" stroke="#a855f7" stroke-width="1.4"/>
+    <text x="475" y="35" text-anchor="middle" fill="#e5e7eb" font-family="Inter" font-size="13">DE + GSEA</text>
+
+    <!-- second row -->
+    <rect x="80" y="90" width="150" height="40" rx="10" fill="#020617" stroke="#22c55e" stroke-width="1.4"/>
+    <text x="155" y="115" text-anchor="middle" fill="#e5e7eb" font-family="Inter" font-size="13">Reductions</text>
+
+    <line x1="230" y1="110" x2="280" y2="110" stroke="#22c55e" stroke-width="1.4"/>
+
+    <rect x="280" y="90" width="150" height="40" rx="10" fill="#020617" stroke="#f97316" stroke-width="1.4"/>
+    <text x="355" y="115" text-anchor="middle" fill="#e5e7eb" font-family="Inter" font-size="13">Trajectory</text>
+  </g>
+</svg>
