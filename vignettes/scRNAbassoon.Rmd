@@ -1,0 +1,694 @@
+---
+title: "scRNAbassoon: Comprehensive scRNA-seq Analysis Pipeline"
+author: "scRNAbassoon Development Team"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{scRNAbassoon: Comprehensive scRNA-seq Analysis Pipeline}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5
+)
+```
+
+# Introduction
+
+**scRNAbassoon** is an optimized, end-to-end single-cell RNA-seq analysis pipeline built on Seurat v5. It automates the complete workflow from quality control through differential expression, pathway enrichment, and pseudotime trajectory analysis.
+
+## Key Features
+
+- **Automated QC and Filtering**: Smart filtering based on feature counts, UMI depth, and mitochondrial content
+- **Cell Type Annotation**: Marker-based annotation with built-in mouse developmental markers
+- **Multi-level Visualization**: Global, per-replicate, and per-sample dimensionality reduction plots
+- **Differential Expression**: Comprehensive DE analysis across experimental conditions
+- **Pathway Enrichment**: Integrated ORA and GSEA with GO terms and custom GMT files
+- **Trajectory Analysis**: Pseudotime inference using Slingshot
+- **Reproducible Outputs**: Organized directory structure with publication-ready figures
+
+---
+
+# Installation
+
+## Prerequisites
+
+scRNAbassoon requires R >= 4.4.3 and several Bioconductor packages.
+
+```{r install_deps, eval=FALSE}
+# Install BiocManager if not already installed
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+# Install Bioconductor dependencies
+BiocManager::install(c(
+  "clusterProfiler",
+  "enrichplot",
+  "org.Mm.eg.db",
+  "AnnotationDbi",
+  "EnhancedVolcano",
+  "SingleCellExperiment",
+  "slingshot",
+  "scater"
+))
+
+# Install CRAN dependencies
+install.packages(c(
+  "Seurat",
+  "data.table",
+  "dplyr",
+  "tidyr",
+  "ggplot2",
+  "ggrepel",
+  "RColorBrewer",
+  "patchwork",
+  "Matrix",
+  "pheatmap",
+  "scales",
+  "zip",
+  "openxlsx",
+  "future",
+  "optparse"
+))
+```
+
+## Install scRNAbassoon
+
+```{r install_package, eval=FALSE}
+# From local source
+install.packages("path/to/scRNAbassoon", repos = NULL, type = "source")
+
+# Or using devtools (if hosted on GitHub)
+# devtools::install_github("username/scRNAbassoon")
+```
+
+---
+
+# Quick Start
+
+## Basic Pipeline Execution
+
+The simplest way to run scRNAbassoon:
+
+```{r basic_usage, eval=FALSE}
+library(scRNAbassoon)
+
+# Run the complete pipeline
+run_bassoon_pipeline(
+  in_dir = "/path/to/cellranger/filtered_feature_bc_matrix/",
+  out_dir = "/path/to/output/"
+)
+```
+
+This minimal command will:
+
+1. Load 10X Cell Ranger data
+2. Perform QC filtering (default thresholds)
+3. Normalize and scale data
+4. Run PCA, UMAP, and t-SNE
+5. Cluster cells and annotate using built-in markers
+6. Generate visualizations
+7. Save results to organized output directories
+
+---
+
+# Input Data Formats
+
+## Cell Ranger Output
+
+scRNAbassoon accepts standard 10X Genomics Cell Ranger outputs:
+
+```
+filtered_feature_bc_matrix/
+├── barcodes.tsv.gz
+├── features.tsv.gz
+└── matrix.mtx.gz
+```
+
+Or HDF5 format:
+
+```
+filtered_feature_bc_matrix.h5
+```
+
+## Sample Mapping File
+
+To analyze multiple samples with experimental metadata, provide a CSV file:
+
+```{r sample_map_example, eval=FALSE}
+# sample_mapping.csv
+# suffix,sample_name,group
+# 1,Control_Rep1,Control
+# 2,Control_Rep2,Control
+# 3,Treated_Rep1,Treated
+# 4,Treated_Rep2,Treated
+```
+
+**Columns:**
+
+- `suffix`: The numeric suffix from Cell Ranger aggregation (e.g., `-1`, `-2`)
+- `sample_name`: Descriptive replicate name
+- `group`: Experimental condition for DE analysis
+
+---
+
+# Customized Analysis
+
+## Complete Parameter Set
+
+```{r full_params, eval=FALSE}
+library(scRNAbassoon)
+library(future)
+
+# Configure parallel processing
+plan("multisession", workers = 8)
+options(future.globals.maxSize = 100 * 1024^3)  # 100 GB
+
+run_bassoon_pipeline(
+  in_dir = "/cellranger/aggregated/filtered_feature_bc_matrix/",
+  out_dir = "/results/my_analysis/",
+  
+  # Sample and marker metadata
+  sample_map_file = "/metadata/sample_mapping.csv",
+  markers_file = "/markers/custom_markers.rds",  # Optional: custom markers
+  
+  # Differential expression
+  conditions = "Treatment_vs_Control,KO_vs_WT",
+  no_compare = FALSE,
+  
+  # Analysis parameters
+  n_pcs = 30,
+  resolution = 0.8,
+  
+  # QC thresholds
+  min_cells = 3,
+  min_features = 200,
+  max_features = 6000,
+  max_mito_pct = 15,
+  
+  # Visualization
+  plot_format = "both",  # "pdf", "png", or "both"
+  width = 14,
+  height = 12,
+  use_ggrepel = TRUE,
+  
+  # Optional modules
+  run_trajectory = TRUE,
+  zip_outputs = TRUE,
+  
+  # Enrichment analysis
+  use_offline_gmt = TRUE,
+  gmt_dir = "/reference/gmt_files/mouse/",
+  gmt_globs = "m2.cp.wikipathways.v2024.1.Mm.symbols.gmt,m2.cp.kegg.v2024.1.Mm.symbols.gmt"
+)
+```
+
+---
+
+# Cell Type Annotation
+
+## Built-in Markers
+
+scRNAbassoon includes curated markers for mouse embryonic development (E7.5 - E9.5):
+
+```{r view_markers, eval=FALSE}
+# View available cell type markers
+library(scRNAbassoon)
+names(default_mouse_markers)
+
+# Example markers for a specific cell type
+default_mouse_markers$`E8.25-Neural_crest`
+# [1] "Sox10" "Dlx2"  "Foxd3" "Sox9"
+```
+
+## Custom Marker Sets
+
+### Option 1: RDS File (List Format)
+
+```{r custom_markers_rds, eval=FALSE}
+# Create custom marker list
+my_markers <- list(
+  "T_cells" = c("Cd3d", "Cd3e", "Cd4", "Cd8a"),
+  "B_cells" = c("Cd79a", "Cd19", "Ms4a1"),
+  "Macrophages" = c("Cd68", "Itgam", "Adgre1"),
+  "NK_cells" = c("Ncr1", "Klrb1c", "Nkg7")
+)
+
+# Save as RDS
+saveRDS(my_markers, "custom_immune_markers.rds")
+
+# Use in pipeline
+run_bassoon_pipeline(
+  in_dir = "data/",
+  out_dir = "results/",
+  markers_file = "custom_immune_markers.rds"
+)
+```
+
+### Option 2: CSV File
+
+```{r custom_markers_csv, eval=FALSE}
+# Create CSV with columns: celltype, gene
+library(data.table)
+
+marker_df <- data.table(
+  celltype = c("T_cells", "T_cells", "T_cells",
+               "B_cells", "B_cells"),
+  gene = c("Cd3d", "Cd3e", "Cd4",
+           "Cd79a", "Cd19")
+)
+
+fwrite(marker_df, "custom_markers.csv")
+
+# Use in pipeline
+run_bassoon_pipeline(
+  in_dir = "data/",
+  out_dir = "results/",
+  markers_file = "custom_markers.csv"
+)
+```
+
+---
+
+# Differential Expression Analysis
+
+## Single Comparison
+
+```{r de_single, eval=FALSE}
+run_bassoon_pipeline(
+  in_dir = "data/",
+  out_dir = "results/",
+  sample_map_file = "sample_map.csv",
+  conditions = "Treatment_vs_Control"
+)
+```
+
+## Multiple Comparisons
+
+```{r de_multiple, eval=FALSE}
+run_bassoon_pipeline(
+  in_dir = "data/",
+  out_dir = "results/",
+  sample_map_file = "sample_map.csv",
+  conditions = "Mutant_vs_WT,Rescue_vs_Mutant,Rescue_vs_WT"
+)
+```
+
+## DE Output Structure
+
+For each comparison and cell type:
+
+```
+DE/
+└── Mutant_vs_WT/
+    ├── Neural_crest/
+    │   ├── DE_results.csv
+    │   └── Volcano_Plot.pdf
+    ├── Endothelium/
+    │   ├── DE_results.csv
+    │   └── Volcano_Plot.pdf
+    └── ...
+```
+
+**DE_results.csv columns:**
+
+- `gene`: Gene symbol
+- `p_val`: Nominal p-value
+- `avg_log2FC`: Log2 fold change
+- `pct.1`: % cells expressing in group 1
+- `pct.2`: % cells expressing in group 2
+- `p_val_adj`: Adjusted p-value (Bonferroni)
+
+---
+
+# Pathway Enrichment
+
+## Gene Ontology (GO) Enrichment
+
+Automatically performed for upregulated and downregulated genes:
+
+- **ORA (Over-Representation Analysis)**: Tests if DE genes are enriched in GO terms
+- **GSEA (Gene Set Enrichment Analysis)**: Tests for coordinated expression changes
+
+```
+Enrichment/
+└── Treatment_vs_Control/
+    └── Neural_crest/
+        ├── ORA/
+        │   ├── Neural_crest_Treatment_vs_Control_UP_GO_BP.csv
+        │   ├── Neural_crest_Treatment_vs_Control_UP_GO_BP_dotplot.pdf
+        │   ├── Neural_crest_Treatment_vs_Control_DOWN_GO_BP.csv
+        │   └── ...
+        └── GSEA/
+            ├── Neural_crest_Treatment_vs_Control_GSEA_GO_BP.csv
+            ├── Neural_crest_Treatment_vs_Control_GSEA_GO_BP_dotplot.pdf
+            └── ...
+```
+
+## Custom GMT Files
+
+Use curated pathway databases (MSigDB, WikiPathways, KEGG):
+
+```{r gmt_usage, eval=FALSE}
+run_bassoon_pipeline(
+  in_dir = "data/",
+  out_dir = "results/",
+  sample_map_file = "sample_map.csv",
+  conditions = "Treatment_vs_Control",
+  use_offline_gmt = TRUE,
+  gmt_dir = "/reference/msigdb/mouse/",
+  gmt_globs = "m2.cp.wikipathways.v2024.1.Mm.symbols.gmt,m5.go.bp.v2024.1.Mm.symbols.gmt"
+)
+```
+
+**GMT file sources:**
+
+- [MSigDB](https://www.gsea-msigdb.org/gsea/msigdb/): Molecular Signatures Database
+- [WikiPathways](https://www.wikipathways.org/): Community-curated pathways
+- [KEGG](https://www.genome.jp/kegg/): Kyoto Encyclopedia of Genes and Genomes
+
+---
+
+# Trajectory Analysis
+
+Pseudotime analysis using Slingshot identifies developmental trajectories:
+
+```{r trajectory, eval=FALSE}
+run_bassoon_pipeline(
+  in_dir = "data/",
+  out_dir = "results/",
+  run_trajectory = TRUE
+)
+```
+
+Outputs per experimental group:
+
+```
+Trajectory/
+├── SCE_Control.rds              # SingleCellExperiment with lineages
+├── Trajectory_Control.pdf       # UMAP with trajectory curves
+├── SCE_Treatment.rds
+└── Trajectory_Treatment.pdf
+```
+
+Load and explore trajectory results:
+
+```{r load_trajectory, eval=FALSE}
+library(slingshot)
+library(SingleCellExperiment)
+
+# Load saved trajectory
+sce <- readRDS("results/Trajectory/SCE_Control.rds")
+
+# Extract pseudotime
+pseudotime <- slingPseudotime(sce)
+head(pseudotime)
+
+# Get lineages
+curves <- slingCurves(sce)
+```
+
+---
+
+# Output Directory Structure
+
+```
+output/
+├── QC/
+│   ├── QC_Metrics_Violin.pdf
+│   └── QC_Count_vs_Feature.pdf
+├── Global/
+│   ├── Complete_Seurat_Object.rds
+│   ├── Global_UMAP_Clusters.pdf
+│   ├── Global_UMAP_CellTypes.pdf
+│   └── Global_UMAP_Groups.pdf
+├── Replicates/
+│   ├── Control_Rep1/
+│   │   └── UMAP_Annotated.pdf
+│   └── Control_Rep2/
+│       └── UMAP_Annotated.pdf
+├── Samples/
+│   ├── Control/
+│   │   └── UMAP_Annotated_by_Replicate.pdf
+│   └── Treatment/
+│       └── UMAP_Annotated_by_Replicate.pdf
+├── Markers/
+│   ├── All_Cluster_Markers.csv
+│   └── Heatmap_Top10_Markers.pdf
+├── DE/
+│   └── Treatment_vs_Control/
+│       ├── Neural_crest/
+│       │   ├── DE_results.csv
+│       │   └── Volcano_Plot.pdf
+│       └── ...
+├── Enrichment/
+│   └── Treatment_vs_Control/
+│       └── Neural_crest/
+│           ├── ORA/
+│           └── GSEA/
+├── Trajectory/
+│   ├── SCE_Control.rds
+│   └── Trajectory_Control.pdf
+└── Complete_Analysis.zip
+```
+
+---
+
+# Command-Line Usage
+
+## From Terminal
+
+```bash
+Rscript /path/to/installed/scRNAbassoon/run_bassoon.R \
+  --in_dir /data/cellranger/filtered_feature_bc_matrix/ \
+  --out_dir /results/experiment1/ \
+  --sample_map /metadata/samples.csv \
+  --conditions "Treatment_vs_Control" \
+  --n_pcs 30 \
+  --resolution 0.8 \
+  --min_features 200 \
+  --max_features 6000 \
+  --max_mito_pct 15 \
+  --plot_format both \
+  --width 14 \
+  --height 12 \
+  --use_ggrepel TRUE \
+  --run_trajectory TRUE \
+  --zip_outputs TRUE \
+  --use_offline_gmt TRUE \
+  --gmt_dir /reference/msigdb/mouse/ \
+  --gmt_globs "m2.cp.wikipathways.v2024.1.Mm.symbols.gmt"
+```
+
+## Find Installed Script Location
+
+```{r find_script, eval=FALSE}
+system.file("run_bassoon.R", package = "scRNAbassoon")
+```
+
+---
+
+# Advanced Workflows
+
+## Modular Function Calls
+
+For fine-grained control, call individual functions:
+
+```{r modular, eval=FALSE}
+library(scRNAbassoon)
+library(Seurat)
+
+# Setup
+dirs <- setup_output_dirs("/results/my_analysis/")
+
+# Load data
+seu <- load_sc_data(
+  in_dir = "/data/cellranger/",
+  sample_map_df = read.csv("sample_map.csv"),
+  min_cells = 3,
+  min_features = 200
+)
+
+# QC
+seu <- run_qc(
+  seu, dirs,
+  min_features = 200,
+  max_features = 6000,
+  max_mito_pct = 15,
+  plot_format = "pdf",
+  width = 14,
+  height = 12
+)
+
+# Preprocessing
+seu <- preprocess_data(seu, n_pcs = 30, resolution = 0.8)
+
+# Annotation
+seu <- annotate_by_markers(seu, default_mouse_markers)
+
+# Visualizations
+plot_global_reductions(seu, dirs, "pdf", 14, 12, use_ggrepel = TRUE)
+plot_per_sample(seu, dirs, "pdf", 14, 12, use_ggrepel = TRUE)
+
+# Marker discovery
+markers <- find_and_plot_markers(seu, dirs, "pdf", 14, 12)
+
+# Differential expression
+run_de_analysis(
+  seu, dirs,
+  conditions_str = "Treatment_vs_Control",
+  format = "pdf",
+  use_offline_gmt = FALSE,
+  gmt_dir = "",
+  gmt_globs = ""
+)
+
+# Trajectory
+run_trajectory_analysis(seu, dirs, format = "pdf")
+
+# Save final object
+saveRDS(seu, file.path(dirs$global, "Final_Seurat_Object.rds"))
+```
+
+## Custom QC Thresholds Per Sample
+
+```{r custom_qc, eval=FALSE}
+# Load without automatic filtering
+seu <- load_sc_data(
+  in_dir = "/data/cellranger/",
+  min_cells = 1,
+  min_features = 0
+)
+
+# Calculate metrics
+seu[["percent.mt"]] <- PercentageFeatureSet(seu, pattern = "^mt-")
+
+# Inspect distributions per sample
+VlnPlot(seu, features = "nFeature_RNA", group.by = "replicate")
+
+# Custom filtering
+seu <- subset(seu, 
+              subset = nFeature_RNA >= 500 & 
+                       nFeature_RNA <= 7000 & 
+                       percent.mt <= 10)
+
+# Continue with standard workflow
+seu <- preprocess_data(seu, n_pcs = 30, resolution = 0.8)
+```
+
+---
+
+# Troubleshooting
+
+## Common Issues
+
+### Memory Limitations
+
+```{r memory_fix, eval=FALSE}
+library(future)
+options(future.globals.maxSize = 200 * 1024^3)  # Increase to 200 GB
+```
+
+### Missing GMT Files
+
+Ensure GMT files match the expected format:
+
+```
+pathway1    description    gene1    gene2    gene3
+pathway2    description    geneA    geneB
+```
+
+### Parallel Processing Errors
+
+```{r parallel_fix, eval=FALSE}
+# Reduce workers if hitting memory limits
+plan("multisession", workers = 4)
+
+# Or use sequential processing
+plan("sequential")
+```
+
+### No Cells Passing QC
+
+Relax QC thresholds:
+
+```{r relax_qc, eval=FALSE}
+run_bassoon_pipeline(
+  in_dir = "data/",
+  out_dir = "results/",
+  min_features = 100,      # Lower minimum
+  max_features = 8000,     # Raise maximum
+  max_mito_pct = 20        # Allow higher mito%
+)
+```
+
+---
+
+# Best Practices
+
+## Quality Control
+
+1. **Always inspect QC plots** before proceeding
+2. Adjust thresholds based on your tissue type and sequencing depth
+3. Low-quality samples: Consider `min_features = 500`, `max_mito_pct = 10`
+4. High-depth samples: Consider `max_features = 8000-10000`
+
+## Clustering
+
+1. Start with `resolution = 0.5` for coarse clusters
+2. Increase to `0.8-1.5` for fine-grained cell states
+3. Use `n_pcs = 30` for most datasets; increase to 50 for complex datasets
+
+## Differential Expression
+
+1. Ensure adequate replication (≥3 biological replicates per condition)
+2. Minimum 10 cells per cell type per condition for robust DE
+3. Use Wilcoxon rank-sum test (default) for non-parametric comparisons
+
+## Enrichment Analysis
+
+1. Download the latest GMT files from MSigDB for your species
+2. Use multiple GMT collections for comprehensive pathway coverage
+3. Focus on significant pathways (adj. p-value < 0.05)
+
+---
+
+# Session Info
+
+```{r session_info, eval=FALSE}
+sessionInfo()
+```
+
+---
+
+# Citation
+
+If you use scRNAbassoon in your research, please cite:
+
+```
+scRNAbassoon: An Optimized scRNA-seq Analysis Pipeline
+[Author], [Year]
+[Repository URL or DOI]
+```
+
+---
+
+# Contact
+
+For bug reports and feature requests, please contact:
+
+**Maintainer:** eb.bioinfo@pm.me
+
+---
+
+# License
+
+This package is distributed under the MIT License.
