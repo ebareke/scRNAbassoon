@@ -53,7 +53,7 @@ d <- run_bassoon_pipeline(
 
 ---
 
-## 🛰️ **Futuristic Workflow Overview**
+## 🛰️ **Workflow Overview**
 <p align="center">
   <img src="docs/workflow_futuristic.svg" width="100%" />
 </p>
