@@ -1,0 +1,88 @@
+Package: scRNAbassoon
+Type: Package
+Title: Optimized scRNA-seq Analysis Pipeline
+Version: 1.0.0
+Date: 2024-12-01
+Authors@R: c(
+    person("Dr. Eric Bareke", "Author", email = "eb.bioinfo@pm.me", role = c("aut", "cre")),
+    person("Prof. Jacek Majewski", role = "ctb")
+    )
+Maintainer: Dr. Eric Bareke <eb.bioinfo@pm.me>
+Description: An optimized Seurat v5 pipeline for comprehensive single-cell RNA-seq 
+    analysis. Automates quality control, filtering, normalization, dimensionality 
+    reduction, clustering, and cell type annotation. Includes integrated differential 
+    expression analysis with Wilcoxon rank-sum testing, pathway enrichment via 
+    over-representation analysis (ORA) and gene set enrichment analysis (GSEA), 
+    and pseudotime trajectory inference using Slingshot. Designed for high-throughput 
+    processing of 10X Genomics Cell Ranger outputs with customizable parameters and 
+    publication-ready visualizations.
+License: MIT + file LICENSE
+URL: https://github.com/yourusername/scRNAbassoon
+BugReports: https://github.com/yourusername/scRNAbassoon/issues
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.3
+Roxygen: list(markdown = TRUE)
+Depends:
+    R (>= 4.4.3)
+Imports:
+    AnnotationDbi (>= 1.68.0),
+    clusterProfiler (>= 4.14.0),
+    data.table (>= 1.17.8),
+    dplyr (>= 1.1.4),
+    enrichplot (>= 1.26.1),
+    EnhancedVolcano (>= 1.24.0),
+    future (>= 1.68.0),
+    ggplot2 (>= 4.0.1),
+    ggrepel (>= 0.9.6),
+    grDevices,
+    graphics,
+    Matrix (>= 1.7.4),
+    methods,
+    openxlsx (>= 4.2.8.1),
+    optparse (>= 1.7.5),
+    org.Mm.eg.db (>= 3.20.0),
+    patchwork (>= 1.3.2),
+    pheatmap (>= 1.0.13),
+    RColorBrewer (>= 1.1-3),
+    rlang (>= 1.1.6),
+    scales (>= 1.4.0),
+    scater (>= 1.34.1),
+    Seurat (>= 5.3.1),
+    SeuratObject (>= 5.2.0),
+    SingleCellExperiment (>= 1.28.0),
+    slingshot (>= 2.14.0),
+    stats,
+    tidyr (>= 1.3.1),
+    tools,
+    utils,
+    zip (>= 2.3.3)
+Suggests:
+    BiocStyle,
+    knitr,
+    loupeR (>= 1.1.4),
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+biocViews: 
+    SingleCell,
+    RNASeq,
+    Sequencing,
+    GeneExpression,
+    Transcriptomics,
+    DifferentialExpression,
+    Clustering,
+    Visualization,
+    QualityControl,
+    Preprocessing,
+    Normalization,
+    DimensionReduction,
+    GeneSetEnrichment,
+    Pathways,
+    Annotation,
+    CellBiology,
+    DevelopmentalBiology,
+    SystemsBiology
+SystemRequirements: 
+    For optimal performance: 32GB RAM minimum, 64GB+ recommended for large datasets
+Config/testthat/edition: 3
