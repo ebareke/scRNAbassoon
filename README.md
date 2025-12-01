@@ -1,4 +1,5 @@
-# 📦 **scRNAbassoon**  
+# 📦 **scRNAbassoon**  <img src="https://img.shields.io/badge/status-active-success" align="right"/>
+
 ### *A Next‑Generation, Fully Automated scRNA‑seq Analysis Pipeline (Seurat v5, ORA/GSEA, Slingshot)*  
 
 <p align="center">
